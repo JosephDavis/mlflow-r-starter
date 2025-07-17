@@ -1,0 +1,25 @@
+services:
+
+  # MLflow tracking server
+  mlflow-server:
+    image: python:3.11-slim
+    container_name: mlflow-server
+    command: ["sh", "-c", "pip install mlflow && mlflow server --backend-store-uri file:///mlruns --default-artifact-root file:///mlruns --host 0.0.0.0 --port 5001"]
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./mlruns:/mlruns
+
+  # Model runner
+  run-model:
+    build:
+      context: .
+      dockerfile: docker/r-runtime/Dockerfile
+    platform: linux/amd64
+    command: ["sh", "-c", "Rscript /R/mlflow_example.R"]
+    network_mode: host
+    volumes:
+      - ./R:/R
+      - ./mlruns:/mlruns
+    depends_on:
+      - mlflow-server
